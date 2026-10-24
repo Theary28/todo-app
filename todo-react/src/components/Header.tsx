@@ -1,4 +1,4 @@
-import { CheckCheck, Moon, Sun } from 'lucide-react'
+import { CheckCheck, LogOut, Moon, Sun } from 'lucide-react'
 import { useTheme } from '@/components/theme-provider'
 import IconTip from '@/components/IconTip'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -9,9 +9,10 @@ import type { Profile } from '@/types'
 interface HeaderProps {
   profile: Profile
   onProfileClick: () => void
+  onLogout: () => void
 }
 
-export default function Header({ profile, onProfileClick }: HeaderProps) {
+export default function Header({ profile, onProfileClick, onLogout }: HeaderProps) {
   const { resolvedTheme, setTheme } = useTheme()
 
   return (
@@ -55,6 +56,18 @@ export default function Header({ profile, onProfileClick }: HeaderProps) {
               </span>
             )}
           </button>
+
+          <IconTip label="Sign out">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              onClick={onLogout}
+              aria-label="Sign out"
+            >
+              <LogOut />
+            </Button>
+          </IconTip>
         </div>
       </div>
     </header>
