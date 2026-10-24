@@ -5,6 +5,7 @@ import { Todo } from './entities/todo.entity.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+// Every query is scoped to ownerId: another user's todo is reported as not found.
 @Injectable()
 export class TodosService {
   constructor(
@@ -12,22 +13,22 @@ export class TodosService {
     private repo: Repository<Todo>,
   ) {}
 
-  findAll() {
-    return this.repo.find({ order: { id: 'ASC' } });
+  findAll(ownerId: string) {
+    return this.repo.find({ where: { ownerId }, order: { id: 'ASC' } });
   }
 
-  create(dto: CreateTodoDto) {
-    return this.repo.save(this.repo.create(dto));
+  create(dto: CreateTodoDto, ownerId: string) {
+    return this.repo.save(this.repo.create({ ...dto, ownerId }));
   }
 
-  async update(id: number, dto: UpdateTodoDto) {
-    const todo = await this.repo.findOneBy({ id });
+  async update(id: number, dto: UpdateTodoDto, ownerId: string) {
+    const todo = await this.repo.findOneBy({ id, ownerId });
     if (!todo) throw new NotFoundException(`Todo #${id} not found`);
     return this.repo.save(this.repo.merge(todo, dto));
   }
 
-  async remove(id: number) {
-    const result = await this.repo.delete(id);
+  async remove(id: number, ownerId: string) {
+    const result = await this.repo.delete({ id, ownerId });
     if (!result.affected) throw new NotFoundException(`Todo #${id} not found`);
   }
 }
