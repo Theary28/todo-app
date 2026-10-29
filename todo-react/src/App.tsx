@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CloudOff, Loader2, RotateCw } from 'lucide-react'
 import { toast } from 'sonner'
+import AdminDialog from '@/components/AdminDialog'
 import AuthScreen from '@/components/AuthScreen'
 import BulkBar from '@/components/BulkBar'
 import EmptyState from '@/components/EmptyState'
@@ -72,6 +73,8 @@ function TodoApp({ onLogout }: { onLogout: () => void }) {
   const [starredOnly, setStarredOnly] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(() => new Set())
   const [profileOpen, setProfileOpen] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [adminOpen, setAdminOpen] = useState(false)
 
   const composerRef = useRef<HTMLInputElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -124,6 +127,11 @@ function TodoApp({ onLogout }: { onLogout: () => void }) {
   useEffect(() => {
     loadTodos()
     loadProfile()
+    // If this fails the admin button just stays hidden
+    authApi
+      .getRole()
+      .then((role) => setIsAdmin(role === 'admin'))
+      .catch(() => {})
   }, [])
 
   // Errors are shown inside the profile dialog, so let them reach it
@@ -296,6 +304,7 @@ function TodoApp({ onLogout }: { onLogout: () => void }) {
         profile={profile}
         onProfileClick={() => profileStatus === 'ready' && setProfileOpen(true)}
         onLogout={onLogout}
+        onAdminClick={isAdmin ? () => setAdminOpen(true) : undefined}
       />
 
       <main className="mx-auto max-w-6xl space-y-8 px-4 pt-8 pb-32 sm:px-6">
@@ -410,6 +419,8 @@ function TodoApp({ onLogout }: { onLogout: () => void }) {
         profile={profile}
         onSave={saveProfile}
       />
+
+      {isAdmin && <AdminDialog open={adminOpen} onOpenChange={setAdminOpen} />}
     </div>
   )
 }

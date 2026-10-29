@@ -1,5 +1,5 @@
 import { apiFetch } from '@/services/api'
-import type { Status, Todo } from '@/types'
+import type { AdminTodo, Status, Todo } from '@/types'
 
 const API = '/todos'
 
@@ -38,6 +38,14 @@ export async function getTodos(): Promise<Todo[]> {
   if (!res.ok) throw new Error('Could not load todos')
   const data: ApiTodo[] = await res.json()
   return data.map(toTodo)
+}
+
+// Admin only: every user's todos with the owner's email (403 for anyone else)
+export async function getAllTodosForAdmin(): Promise<AdminTodo[]> {
+  const res = await apiFetch('/admin/todos')
+  if (!res.ok) throw new Error('Could not load all todos')
+  const data: (ApiTodo & { owner: { email: string } })[] = await res.json()
+  return data.map((item) => ({ ...toTodo(item), ownerEmail: item.owner.email }))
 }
 
 // Add a to-do

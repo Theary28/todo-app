@@ -26,8 +26,8 @@ export class AuthController {
   ) {}
 
   @Public()
-  @Post('register')
-  async register(
+  @Post('signup')
+  async signup(
     @Body() dto: SignupDto,
     @Res({ passthrough: true }) res: Response,
   ) {

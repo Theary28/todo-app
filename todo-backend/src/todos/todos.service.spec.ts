@@ -28,6 +28,15 @@ describe('TodosService', () => {
     expect(repo.find).toHaveBeenCalledWith({ where: { ownerId: 'user-1' }, order: { id: 'ASC' } });
   });
 
+  it('lists every user\'s todos for an admin, exposing only the owner\'s id and email', async () => {
+    await service.findAllForAdmin();
+    expect(repo.find).toHaveBeenCalledWith({
+      relations: { owner: true },
+      select: { owner: { id: true, email: true } },
+      order: { id: 'ASC' },
+    });
+  });
+
   it('treats another user\'s todo as not found on update', async () => {
     repo.findOneBy.mockResolvedValue(null);
     await expect(service.update(1, { title: 'x' }, 'user-2')).rejects.toThrow(NotFoundException);

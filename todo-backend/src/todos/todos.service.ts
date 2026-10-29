@@ -17,6 +17,15 @@ export class TodosService {
     return this.repo.find({ where: { ownerId }, order: { id: 'ASC' } });
   }
 
+  // Admin only (see AdminTodosController): every user's todos, with the owner's email.
+  findAllForAdmin() {
+    return this.repo.find({
+      relations: { owner: true },
+      select: { owner: { id: true, email: true } },
+      order: { id: 'ASC' },
+    });
+  }
+
   create(dto: CreateTodoDto, ownerId: string) {
     return this.repo.save(this.repo.create({ ...dto, ownerId }));
   }
