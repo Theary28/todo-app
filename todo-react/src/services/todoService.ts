@@ -1,6 +1,7 @@
-import type { Status, Todo } from '@/types'
+import { apiFetch } from '@/services/api'
+import type { AdminTodo, Status, Todo } from '@/types'
 
-const API = 'http://localhost:3000/api/todos'
+const API = '/todos'
 
 // The backend uses "TODO" / "IN_PROGRESS" / "DONE"; the app shows "To Do" / "In Progress" / "Done"
 const toApiStatus: Record<Status, string> = {
@@ -31,19 +32,26 @@ const toTodo = (data: ApiTodo): Todo => ({
   starred: data.starred,
 })
 
-// Load the list
+// Load the signed-in user's list
 export async function getTodos(): Promise<Todo[]> {
-  const res = await fetch(API)
+  const res = await apiFetch(API)
   if (!res.ok) throw new Error('Could not load todos')
   const data: ApiTodo[] = await res.json()
   return data.map(toTodo)
 }
 
+// Admin only: every user's todos with the owner's email (403 for anyone else)
+export async function getAllTodosForAdmin(): Promise<AdminTodo[]> {
+  const res = await apiFetch('/admin/todos')
+  if (!res.ok) throw new Error('Could not load all todos')
+  const data: (ApiTodo & { owner: { email: string } })[] = await res.json()
+  return data.map((item) => ({ ...toTodo(item), ownerEmail: item.owner.email }))
+}
+
 // Add a to-do
 export async function createTodo(title: string, status: Status, starred = false): Promise<Todo> {
-  const res = await fetch(API, {
+  const res = await apiFetch(API, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ title, status: toApiStatus[status], starred }),
   })
   if (!res.ok) throw new Error('Could not add todo')
@@ -53,9 +61,8 @@ export async function createTodo(title: string, status: Status, starred = false)
 // Edit the title, status or star
 export async function updateTodo(id: string, changes: Partial<Omit<Todo, 'id'>>): Promise<Todo> {
   const body = changes.status ? { ...changes, status: toApiStatus[changes.status] } : changes
-  const res = await fetch(`${API}/${id}`, {
+  const res = await apiFetch(`${API}/${id}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
   if (!res.ok) throw new Error('Could not update todo')
@@ -64,6 +71,6 @@ export async function updateTodo(id: string, changes: Partial<Omit<Todo, 'id'>>)
 
 // Delete a to-do
 export async function deleteTodo(id: string): Promise<void> {
-  const res = await fetch(`${API}/${id}`, { method: 'DELETE' })
+  const res = await apiFetch(`${API}/${id}`, { method: 'DELETE' })
   if (!res.ok) throw new Error('Could not delete todo')
 }
