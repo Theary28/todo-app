@@ -1,4 +1,4 @@
-import { CheckCheck, Moon, Sun } from 'lucide-react'
+import { CheckCheck, LogOut, Moon, ShieldCheck, Sun } from 'lucide-react'
 import { useTheme } from '@/components/theme-provider'
 import IconTip from '@/components/IconTip'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -9,9 +9,12 @@ import type { Profile } from '@/types'
 interface HeaderProps {
   profile: Profile
   onProfileClick: () => void
+  onLogout: () => void
+  // Only passed for admins; shows the "all users' tasks" button
+  onAdminClick?: () => void
 }
 
-export default function Header({ profile, onProfileClick }: HeaderProps) {
+export default function Header({ profile, onProfileClick, onLogout, onAdminClick }: HeaderProps) {
   const { resolvedTheme, setTheme } = useTheme()
 
   return (
@@ -25,6 +28,20 @@ export default function Header({ profile, onProfileClick }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-1.5">
+          {onAdminClick && (
+            <IconTip label="All users' tasks">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                onClick={onAdminClick}
+                aria-label="All users' tasks"
+              >
+                <ShieldCheck />
+              </Button>
+            </IconTip>
+          )}
+
           <IconTip label="Toggle theme">
             <Button
               variant="ghost"
@@ -55,6 +72,18 @@ export default function Header({ profile, onProfileClick }: HeaderProps) {
               </span>
             )}
           </button>
+
+          <IconTip label="Sign out">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              onClick={onLogout}
+              aria-label="Sign out"
+            >
+              <LogOut />
+            </Button>
+          </IconTip>
         </div>
       </div>
     </header>

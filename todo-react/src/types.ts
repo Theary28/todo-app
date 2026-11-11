@@ -16,3 +16,10 @@ export interface Profile {
 }
 
 export type StatusCounts = Record<StatusFilter, number>
+
+export type Role = 'user' | 'admin'
+
+// A todo as seen in the admin view, which lists every user's todos
+export interface AdminTodo extends Todo {
+  ownerEmail: string
+}
