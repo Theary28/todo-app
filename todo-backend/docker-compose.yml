@@ -1,0 +1,90 @@
+# The whole stack: api + db + rabbitmq, with Postgres data in the pgdata volume.
+#
+#   docker compose config --quiet            # validate (plain `config` prints secrets)
+#   docker compose up -d --build             # start
+#   docker compose ps                        # db and rabbitmq should be "healthy"
+#   docker compose run --rm migrate          # create the tables
+#   docker compose down                      # stop; pgdata is kept
+#   docker compose down -v                   # stop AND delete pgdata (lab data only)
+#
+# API:         http://localhost:3000/api
+# RabbitMQ UI: http://localhost:15672
+#
+# Settings come from .env. DB_USERNAME, DB_PASSWORD and DB_NAME are reused for
+# the Postgres container; the hosts are overridden so the API reaches the other
+# containers by service name (db, rabbitmq) instead of localhost.
+
+x-app-env: &app-env
+  DB_HOST: db
+  DB_PORT: 5432
+  DB_USERNAME: ${DB_USERNAME:-postgres}
+  DB_PASSWORD: ${DB_PASSWORD:-postgres}
+  DB_NAME: ${DB_NAME:-todo}
+  RABBITMQ_URL: amqp://${RABBITMQ_USER:-todo}:${RABBITMQ_PASSWORD:-todo}@rabbitmq:5672
+
+services:
+  api:
+    build:
+      context: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      <<: *app-env
+      PORT: 3000
+      CORS_ORIGIN: http://localhost:5173
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-todo}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432" # 5433 on your machine, so it won't clash with a local Postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-todo}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-todo}
+    ports:
+      - "5672:5672" # AMQP
+      - "15672:15672" # management UI
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # One-off job, not started by `up`. Run it with: docker compose run --rm migrate
+  migrate:
+    profiles: [tools]
+    build:
+      context: .
+      target: build
+    command: npm run migration:run
+    env_file: .env
+    environment: *app-env
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
